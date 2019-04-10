@@ -21,4 +21,9 @@ public class RedisKeyConstant {
      * @{value} 车次 - 列车号关联 key
      */
     public static final String REDIS_KEY_LOCAL_DATA_TRAIN_NO_LINK = "LOCAL_DATA:TRAIN_NO_LINK";
+
+    /**
+     * @{value} 动态tikcetUrl
+     */
+    public static final String REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL = "LOCAL_DATA:LEFT_TICKET_URL";
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class HttpUtil {
     private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
-    private static final int TIMEOUT = (int) TimeUnit.SECONDS.toMillis(15);
+    private static final int TIMEOUT = (int) TimeUnit.SECONDS.toMillis(50);
 
     /**
      * 执行HTTP请求  <p>get请求时data传null</p>
