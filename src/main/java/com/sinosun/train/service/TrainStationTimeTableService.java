@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.sinosun.train.model.request.GetTrainStationTimeTableRequest;
+import com.sinosun.train.model.response.TrainInfo;
 import com.sinosun.train.model.response.TrainStationTimeTable;
 import com.sinosun.train.model.response.TrainStationTimeTableResult;
 import com.sinosun.train.utils.TrainHelper;
@@ -60,17 +61,21 @@ public class TrainStationTimeTableService {
      * @param trainStartDate
      * @return
      */
-    private List<TrainStationTimeTable> getAnalysisTrainStaionTimeTable(String trainStationName, String trainStationCode, String trainStartDate) {
+    private TrainStationTimeTable getAnalysisTrainStaionTimeTable(String trainStationName, String trainStationCode, String trainStartDate) {
         // 生成请求链接
         String trainStaionTimeTableUrl = String.format(getTrainStationTimeTableUrlFmt, trainStartDate, trainStationName, trainStationCode);
         JSONObject ret12306 = TrainHelper.requestTo12306(trainStaionTimeTableUrl);
-        JSONArray dataArray = ret12306.getJSONObject("data").getJSONArray("data");
+        JSONObject dataObj = ret12306.getJSONObject("data");
+
+        TrainStationTimeTable trainStationTimeTable = new TrainStationTimeTable();
 
         // 返回结果不为空时
-        List<TrainStationTimeTable> trainStationTimeTableList = Lists.newArrayList();
+        JSONArray dataArray = dataObj.getJSONArray("data");
         if (!CollectionUtils.isEmpty(dataArray)) {
+            List<TrainInfo> trainInfos = Lists.newArrayList();
+
             for (int i = 0; i < dataArray.size(); i++) {
-                TrainStationTimeTable trainStationTimeTable = new TrainStationTimeTable();
+                TrainInfo trainInfo = new TrainInfo();
                 JSONObject trainStationTimeInfo = dataArray.getJSONObject(i);
 
                 String startTrainDate = trainStationTimeInfo.getString("start_train_date");
@@ -99,37 +104,41 @@ public class TrainStationTimeTableService {
                 String serviceType = trainStationTimeInfo.getString("service_type");
                 String serviceTypeStr = "0".equals(serviceType) ? "无空调" : "有空调";
 
-                trainStationTimeTable.setStartTrainDate(startTrainDate);
-                trainStationTimeTable.setTrainNo(trainNo);
-                trainStationTimeTable.setStartStationTelecode(startStationTelecode);
-                trainStationTimeTable.setStartStationName(startStationName);
-                trainStationTimeTable.setStartStartTime(startStartTime);
-                trainStationTimeTable.setEndStationTelecode(endStationTelecode);
-                trainStationTimeTable.setEndStationName(endStationName);
-                trainStationTimeTable.setEndArriveTime(endArriveTime);
-                trainStationTimeTable.setTrainTypeCode(trainTypeCode);
-                trainStationTimeTable.setTrainTypeName(trainTypeName);
-                trainStationTimeTable.setTrainClassCode(trainClassCode);
-                trainStationTimeTable.setTrainClassName(trainClassName);
-                trainStationTimeTable.setStationNo(stationNo);
-                trainStationTimeTable.setStationName(stationName);
-                trainStationTimeTable.setStationTelecode(stationTelecode);
-                trainStationTimeTable.setStationTrainCode(stationTrainCode);
-                trainStationTimeTable.setArriveDayDiff(arriveDayDiff);
-                trainStationTimeTable.setArriveTime(arriveTime);
-                trainStationTimeTable.setStartTime(startTime);
-                trainStationTimeTable.setStartDayDiff(startDayDiff);
-                trainStationTimeTable.setStopoverTime(stopoverTime);
-                trainStationTimeTable.setRunningTime(runningTime);
-                trainStationTimeTable.setSeatTypes(seatTypes);
-                trainStationTimeTable.setServiceType(serviceType);
-                trainStationTimeTable.setServiceTypeStr(serviceTypeStr);
+                trainInfo.setStartTrainDate(startTrainDate);
+                trainInfo.setTrainNo(trainNo);
+                trainInfo.setStartStationTelecode(startStationTelecode);
+                trainInfo.setStartStationName(startStationName);
+                trainInfo.setStartStartTime(startStartTime);
+                trainInfo.setEndStationTelecode(endStationTelecode);
+                trainInfo.setEndStationName(endStationName);
+                trainInfo.setEndArriveTime(endArriveTime);
+                trainInfo.setTrainTypeCode(trainTypeCode);
+                trainInfo.setTrainTypeName(trainTypeName);
+                trainInfo.setTrainClassCode(trainClassCode);
+                trainInfo.setTrainClassName(trainClassName);
+                trainInfo.setStationNo(stationNo);
+                trainInfo.setStationName(stationName);
+                trainInfo.setStationTelecode(stationTelecode);
+                trainInfo.setStationTrainCode(stationTrainCode);
+                trainInfo.setArriveDayDiff(arriveDayDiff);
+                trainInfo.setArriveTime(arriveTime);
+                trainInfo.setStartTime(startTime);
+                trainInfo.setStartDayDiff(startDayDiff);
+                trainInfo.setStopoverTime(stopoverTime);
+                trainInfo.setRunningTime(runningTime);
+                trainInfo.setSeatTypes(seatTypes);
+                trainInfo.setServiceType(serviceType);
+                trainInfo.setServiceTypeStr(serviceTypeStr);
 
-                trainStationTimeTableList.add(trainStationTimeTable);
+                trainInfos.add(trainInfo);
             }
+
+            trainStationTimeTable.setTrainInfos(trainInfos);
         }
 
-        return trainStationTimeTableList;
+        trainStationTimeTable.setSameStations(dataObj.getJSONArray("sameStations").toJavaList(String.class));
+
+        return trainStationTimeTable;
     }
 
 }

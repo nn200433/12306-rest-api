@@ -4,8 +4,6 @@ import com.alibaba.fastjson.PropertyNamingStrategy;
 import com.alibaba.fastjson.annotation.JSONType;
 import com.google.common.base.MoreObjects;
 
-import java.util.List;
-
 /**
  * Created on 2019/03/07 09:52:18
  *
@@ -13,20 +11,21 @@ import java.util.List;
  */
 @JSONType(naming = PropertyNamingStrategy.PascalCase)
 public class TrainStationTimeTableResult extends BaseResult {
-    private List<TrainStationTimeTable> result;
+
+    private TrainStationTimeTable result;
 
     public TrainStationTimeTableResult() {
     }
 
-    public TrainStationTimeTableResult(List<TrainStationTimeTable> result) {
+    public TrainStationTimeTableResult(TrainStationTimeTable result) {
         this.result = result;
     }
 
-    public List<TrainStationTimeTable> getResult() {
+    public TrainStationTimeTable getResult() {
         return result;
     }
 
-    public void setResult(List<TrainStationTimeTable> result) {
+    public void setResult(TrainStationTimeTable result) {
         this.result = result;
     }
 

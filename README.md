@@ -174,6 +174,13 @@ Stop
 #### 响应参数
 | 节点 | 名称 | 类型 | 可为空 | 说明 |
 | :------:| :------:| :------: | :------: |:------: |
+| trainInfos | 动车信息列表 | TrainInfo[] | N | |
+| sameStations | 同处站点中文名 | String[] | N | ["南靖","龙山镇"] |
+
+trainInfos
+
+| 节点 | 名称 | 类型 | 可为空 | 说明 |
+| :------:| :------:| :------: | :------: |:------: |
 | startTrainDate | 发车时间（猜测意思） | | N | 例如：20190309|
 | trainNo | 列车号 | String | N | 例如：5l000D323501|
 | startStationTelecode | 始发站 站点代码 | String | N | 例如：NKH|
