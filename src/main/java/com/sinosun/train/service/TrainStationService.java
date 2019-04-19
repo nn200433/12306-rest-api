@@ -1,5 +1,6 @@
 package com.sinosun.train.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.sinosun.train.constants.RedisKeyConstant;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Created on 2019/1/10 21:00.
@@ -79,6 +81,22 @@ public class TrainStationService {
             }
         }
         return new StationResult(new StationList(ret));
+    }
+
+    /**
+     * 根据火车站名称查询站点Code
+     *
+     * @param stationName
+     * @return
+     */
+    public String searchCityByStationNam(String stationName) {
+        // 取站点信息
+        List<Station> stations = getAllStatioonFromRedis();
+        stations = stations.stream().filter(station -> StrUtil.equalsIgnoreCase(station.getName(), stationName)).collect(Collectors.toList());
+        if (stations.size() == 1) {
+            return stations.get(0).getStationCode();
+        }
+        return null;
     }
 
     /**

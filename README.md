@@ -155,6 +155,7 @@ Stop
 | StartTime | 出发时间（格式 HH:mm） | String | N | |
 | ArriveTime | 到达时间（格式 HH:mm 或者----） | String | N |  |
 | StationName | 到达站名 | String | N |  |
+| StationCode | 到达站站点代码 | String | N |  |
 | StopoverTime | 停留时间（分钟） 可能为---- | String | N |  |
 | StationNo | 站序（01开始） | String | N |  |
 | IsSearchStation | 是否是我们搜索的出行站和到达站 | String | N |  false不是 true是 |

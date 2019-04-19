@@ -27,6 +27,11 @@ public class Stop {
     private String stationName;
 
     /**
+     * 到达站code
+     */
+    private String stationCode;
+
+    /**
      * 停留时间（分钟） 可能为----
      */
     private String stopoverTime;
@@ -87,6 +92,14 @@ public class Stop {
 
     public void setIsSearchStation(Boolean searchStation) {
         isSearchStation = searchStation;
+    }
+
+    public String getStationCode() {
+        return stationCode;
+    }
+
+    public void setStationCode(String stationCode) {
+        this.stationCode = stationCode;
     }
 
     @Override

@@ -273,6 +273,7 @@ public class TrainTicketService {
                 String startTime = stopInfo.getString("start_time"); //出发时间（格式 HH:mm）
                 String arriveTime = stopInfo.getString("arrive_time"); //到达时间（格式 HH:mm 或者----）
                 String stationName = stopInfo.getString("station_name"); //站名
+                String stationCode = trainStationService.searchCityByStationNam(stationName);
                 String stopoverTime = stopInfo.getString("stopover_time"); //停留时间（分钟） 可能为----
                 String stationNo = stopInfo.getString("station_no"); //站序（01开始）
                 Boolean isSearchStation = stopInfo.getBoolean("isEnabled"); //是否是我们搜索的出行站和到达站 false不是 true是
@@ -280,6 +281,7 @@ public class TrainTicketService {
                 stop.setStartTime(startTime);
                 stop.setArriveTime(arriveTime);
                 stop.setStationName(stationName);
+                stop.setStationCode(stationCode);
                 stop.setStopoverTime(stopoverTime);
                 stop.setStationNo(stationNo);
                 stop.setIsSearchStation(isSearchStation);
