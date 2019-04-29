@@ -196,8 +196,11 @@ public class TrainTicketService {
                 TrainCodeTrainNoMap.put(trainCode, trainNo);
                 String fromDate = convertFromDate(requestBody.getFromDate());
 
+                // 列车停运状态，无法查询到信息，解析会报错
+                if (StrUtil.isNotBlank(buttonTextInfo) && !StrUtil.containsAny(buttonTextInfo, "列车停运")) {
 //                TicketPrice ticketPrice = queryTicketPrice(trainNo, fromDate, fromStationNo, toStationNo, ypEx);
 //                TrainLine trainLine = getTrainLineFrom12306(trainNo,fromDate, fromStationCode, toStationCode);
+                }
 
                 TicketPrice ticketPrice = new TicketPrice();
 
@@ -209,6 +212,8 @@ public class TrainTicketService {
                 ticket.setToStation(toStationName);
 //                ticket.setFromStationType(getStationTypeName(fromStationNo, trainLine));
 //                ticket.setToStationType(getStationTypeName(toStationNo, trainLine));
+                ticket.setFromStationType(getStationTypeName(fromStationCode, startStationCode, endStationCode));
+                ticket.setToStationType(getStationTypeName(toStationCode, startStationCode, endStationCode));
                 ticket.setFromTime(startTime);
                 ticket.setToTime(arriveTime);
                 ticket.setRunTime(runTime);
@@ -341,6 +346,25 @@ public class TrainTicketService {
         ticketPrice.setYzPrice(yzPrice);
         ticketPrice.setWzPrice(wzPrice);
         return ticketPrice;
+    }
+
+    /**
+     * 获取站点类型 始|终|过
+     * @param stationCode 查询站代码
+     * @param startStationCode 起点站代码
+     * @param endStationCode 终点站代码
+     * @return 站点类型
+     */
+    private String getStationTypeName(String stationCode, String startStationCode, String endStationCode) {
+        String ret = null;
+        if (StrUtil.equalsIgnoreCase(stationCode, startStationCode)) {
+            ret = "始";
+        } else if (StrUtil.equalsIgnoreCase(stationCode, endStationCode)) {
+            ret = "终";
+        } else {
+            ret = "过";
+        }
+        return ret;
     }
 
     /**
