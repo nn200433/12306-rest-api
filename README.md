@@ -3,6 +3,9 @@
 为火车票抢购软件提供强有力的后台支撑。
 > [详细原理分析和代码讲解](https://blog.csdn.net/u013467442/article/details/87898708)
 
+**注：maven项目请使用`gradle`转换出来的`pom.xml`**
+**注：swagger地址：[http://localhost:8080/doc.html](http://localhost:8080/doc.html)**
+
 ## 2.接口公共协议
 
 ### 协议说明

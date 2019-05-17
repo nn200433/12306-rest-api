@@ -43,4 +43,6 @@ dependencies {
 	compile group: 'org.projectlombok', name: 'lombok', version: '1.18.4'
 	compile group: 'cn.hutool', name: 'hutool-all', version: '4.5.7'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '1.5.10.RELEASE'
+    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+    compile group: 'com.github.xiaoymin', name: 'swagger-bootstrap-ui', version: '1.9.3'
 }
