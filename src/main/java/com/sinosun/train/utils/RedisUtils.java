@@ -1,50 +1,103 @@
 package com.sinosun.train.utils;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.*;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
  * redis 工具类
- *
+ * <p>
  * Created on 2019-03-11 09:35:31
  *
  * @author 猎隼丶止戈
  */
-@Service
 public class RedisUtils {
 
-    @Autowired
-    private RedisTemplate redisTemplate;
+    private static Logger logger = LoggerFactory.getLogger(RedisUtils.class);
 
-    @Autowired
-    private StringRedisTemplate template;
+    private static final String LOCK_PREFIX = "lock:";
+    private static final Integer LOCK_EXPIRE = 300;
 
-    @Bean
-    public RedisTemplate<String, String> redisTemplate() {
-        // 设置序列化工具，这样ReportBean不需要实现Serializable接口
-        setSerializer(template);
-        template.afterPropertiesSet();
-        return template;
+    private static RedisTemplate<String, Object> redisTemplate;
+
+    private static StringRedisTemplate stringRedisTemplate;
+
+    public RedisUtils(RedisTemplate<String, Object> redis, StringRedisTemplate stringRedis) {
+        redisTemplate = redis;
+        stringRedisTemplate = stringRedis;
     }
 
-    private void setSerializer(StringRedisTemplate template) {
-        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-        ObjectMapper om = new ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
-        jackson2JsonRedisSerializer.setObjectMapper(om);
-        template.setValueSerializer(jackson2JsonRedisSerializer);
+    /**
+     * 根据key设置缓存有效时间
+     *
+     * @param key
+     * @param time
+     * @return boolean
+     * @author Archer
+     * @date 2019/3/1 16:07
+     */
+    public static boolean expire(String key, long time) {
+        try {
+            if (time > 0) {
+                redisTemplate.expire(key, time, TimeUnit.SECONDS);
+            }
+
+            return true;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取过期时间
+     *
+     * @param key
+     * @return long
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static long getExpire(String key) {
+        return redisTemplate.getExpire(key, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 判断是否存在
+     *
+     * @param key
+     * @return boolean
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static boolean hasKey(String key) {
+        try {
+            return redisTemplate.hasKey(key);
+        } catch (Exception e) {
+
+            return false;
+        }
+    }
+
+    /**
+     * 根据key删除redis数据
+     *
+     * @param key
+     * @return void
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static void del(String... key) {
+        if (key != null && key.length > 0) {
+            if (key.length == 1) {
+                redisTemplate.delete(key[0]);
+            } else {
+                redisTemplate.delete(CollectionUtils.arrayToList(key));
+            }
+        }
     }
 
     /**
@@ -52,18 +105,18 @@ public class RedisUtils {
      *
      * @param key
      * @param value
-     * @return
+     * @return boolean
+     * @author Archer
+     * @date 2019/3/1 16:19
      */
-    public boolean set(final String key, Object value) {
-        boolean result = false;
+    public static boolean set(String key, Object value) {
         try {
-            ValueOperations<Serializable, Object> operations = redisTemplate.opsForValue();
-            operations.set(key, value);
-            result = true;
+            redisTemplate.opsForValue().set(key, value);
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+            return false;
         }
-        return result;
     }
 
     /**
@@ -75,180 +128,358 @@ public class RedisUtils {
      * @param timeUnit
      * @return
      */
-    public boolean set(final String key, Object value, Long expireTime, TimeUnit timeUnit) {
-        boolean result = false;
+    public static boolean set(final String key, Object value, Long expireTime, TimeUnit timeUnit) {
         try {
-            ValueOperations<Serializable, Object> operations = redisTemplate.opsForValue();
+            ValueOperations<String, Object> operations = redisTemplate.opsForValue();
             operations.set(key, value);
             redisTemplate.expire(key, expireTime, timeUnit);
-            result = true;
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
+        return false;
+    }
+
+    /**
+     * 写入缓存设置时效时间
+     *
+     * @param key
+     * @param value
+     * @param expireTime
+     * @param timeUnit
+     * @return
+     */
+    public static boolean setString(final String key, String value, Long expireTime, TimeUnit timeUnit) {
+        try {
+            ValueOperations<String, String> operations = stringRedisTemplate.opsForValue();
+            operations.set(key, value);
+            redisTemplate.expire(key, expireTime, timeUnit);
+            return true;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        return false;
+    }
+
+    /**
+     * 获取键值
+     *
+     * @param key
+     * @return java.lang.Object
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static Object get(String key) {
+        return key == null ? null : redisTemplate.opsForValue().get(key);
+    }
+
+
+    /**
+     * 设置字符串键值
+     *
+     * @param key
+     * @return java.lang.Object
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static boolean setString(String key, String value) {
+        try {
+            stringRedisTemplate.opsForValue().set(key, value);
+            return true;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取字符串类型键值
+     *
+     * @param key
+     * @return java.lang.Object
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static String getString(String key) {
+        return key == null ? null : stringRedisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 获取数值型键值
+     *
+     * @param key 键
+     * @return java.lang.Object
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static Integer getInt(String key) {
+        try {
+            Object v = get(key);
+            if (v == null || "".equals(v)) {
+                return null;
+            }
+
+            return (Integer) v;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param key 键值
+     * @return boolean
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static boolean incr(String key) {
+        try {
+            redisTemplate.opsForValue().increment(key);
+            return true;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * @param key
+     * @return boolean
+     * @author Archer
+     * @date 2019/3/1 16:19
+     */
+    public static int incr(String key, int initValue) throws Exception {
+        String value = stringRedisTemplate.opsForValue().get(key);
+        if (value == null) {
+            stringRedisTemplate.opsForValue().set(key, String.valueOf(initValue));
+        } else {
+            int intValue = Integer.parseInt(value);
+            if (intValue < initValue) {
+                stringRedisTemplate.opsForValue().set(key, String.valueOf(initValue));
+            } else {
+                stringRedisTemplate.opsForValue().increment(key);
+            }
+        }
+        return Integer.parseInt(Objects.requireNonNull(stringRedisTemplate.opsForValue().get(key)));
+    }
+
+    /**
+     * 获取分布式锁
+     *
+     * @param key    键
+     * @param expire 过期时间（ms）
+     * @return
+     */
+    public static boolean tryGetDistributedLock(String key, int expire) {
+        return (Boolean) redisTemplate.execute((RedisCallback) connection -> {
+
+            long expireAt = System.currentTimeMillis() + expire + 1;
+            Boolean acquire = connection.setNX(key.getBytes(), String.valueOf(expireAt).getBytes());
+
+            if (acquire) {
+                return true;
+            } else {
+
+                byte[] value = connection.get(key.getBytes());
+
+                if (Objects.nonNull(value) && value.length > 0) {
+
+                    long expireTime = Long.parseLong(new String(value));
+
+                    if (expireTime < System.currentTimeMillis()) {
+                        // 如果锁已经过期
+                        byte[] oldValue = connection.getSet(key.getBytes(), String.valueOf(System.currentTimeMillis() + expire + 1).getBytes());
+                        // 防止死锁
+                        return Long.parseLong(new String(oldValue)) < System.currentTimeMillis();
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
+    /**
+     * 释放分布式锁
+     *
+     * @param key 键
+     * @return
+     */
+    public static boolean releaseDistributedLock(String key) {
+        return redisTemplate.delete(key);
+    }
+
+    /**
+     * 分布式锁（会给key加默认前缀 lock:）
+     *
+     * @param key key值
+     * @return 是否获取到
+     */
+    public static boolean lock(String key) {
+        String lock = LOCK_PREFIX + key;
+        // 利用lambda表达式
+        return (Boolean) redisTemplate.execute((RedisCallback) connection -> {
+
+            long expireAt = System.currentTimeMillis() + LOCK_EXPIRE + 1;
+            Boolean acquire = connection.setNX(lock.getBytes(), String.valueOf(expireAt).getBytes());
+
+
+            if (acquire) {
+                return true;
+            } else {
+
+                byte[] value = connection.get(lock.getBytes());
+
+                if (Objects.nonNull(value) && value.length > 0) {
+
+                    long expireTime = Long.parseLong(new String(value));
+
+                    if (expireTime < System.currentTimeMillis()) {
+                        // 如果锁已经过期
+                        byte[] oldValue = connection.getSet(lock.getBytes(), String.valueOf(System.currentTimeMillis() + LOCK_EXPIRE + 1).getBytes());
+                        // 防止死锁
+                        return Long.parseLong(new String(oldValue)) < System.currentTimeMillis();
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
+    /**
+     * 删除分布式锁
+     *
+     * @param key
+     * @return
+     */
+    public static boolean deleteLock(String key) {
+        String lock = LOCK_PREFIX + key;
+        return redisTemplate.delete(lock);
+    }
+
+    /**
+     * 设置有序集合
+     *
+     * @param key
+     * @param value
+     * @param score
+     * @return
+     */
+    public static boolean zsetAdd(String key, String value, double score) {
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        boolean result = operations.add(key, value, score);
         return result;
     }
 
     /**
-     * 批量删除对应的value
-     *
-     * @param keys
-     */
-    public void remove(final String... keys) {
-        for (String key : keys) {
-            remove(key);
-        }
-    }
-
-    /**
-     * 批量删除key
-     *
-     * @param pattern
-     */
-    public void removePattern(final String pattern) {
-        Set<Serializable> keys = redisTemplate.keys(pattern);
-        if (keys.size() > 0) {
-            redisTemplate.delete(keys);
-        }
-    }
-
-    /**
-     * 删除对应的value
-     *
-     * @param key
-     */
-    public void remove(final String key) {
-        if (exists(key)) {
-            redisTemplate.delete(key);
-        }
-    }
-
-    /**
-     * 判断缓存中是否有对应的value
+     * 设置有序集合
      *
      * @param key
      * @return
      */
-    public boolean exists(final String key) {
-        return redisTemplate.hasKey(key);
-    }
-
-    /**
-     * 读取缓存
-     *
-     * @param key
-     * @return
-     */
-    public Object get(final String key) {
-        Object result = null;
-        ValueOperations<Serializable, Object> operations = redisTemplate.opsForValue();
-        result = operations.get(key);
+    public static Long zsetSize(String key) {
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        Long result = operations.size(key);
         return result;
     }
 
     /**
-     * 读取缓存
-     *
-     * @param key
-     * @return
-     */
-    public Object getValueByKey(String key) {
-        Object result = null;
-        result = redisTemplate.opsForValue().get(key);
-        return result;
-    }
-
-    /**
-     * 哈希 添加
-     *
-     * @param key
-     * @param hashKey
-     * @param value
-     */
-    public void hmSet(String key, Object hashKey, Object value) {
-        HashOperations<String, Object, Object> hash = redisTemplate.opsForHash();
-        hash.put(key, hashKey, value);
-    }
-
-    /**
-     * 哈希获取数据
-     *
-     * @param key
-     * @param hashKey
-     * @return
-     */
-    public Object hmGet(String key, Object hashKey) {
-        HashOperations<String, Object, Object> hash = redisTemplate.opsForHash();
-        return hash.get(key, hashKey);
-    }
-
-    /**
-     * 列表添加
-     *
-     * @param k
-     * @param v
-     */
-    public void lPush(String k, Object v) {
-        ListOperations<String, Object> list = redisTemplate.opsForList();
-        list.rightPush(k, v);
-    }
-
-    /**
-     * 列表获取
-     *
-     * @param k
-     * @param l
-     * @param l1
-     * @return
-     */
-    public List<Object> lRange(String k, long l, long l1) {
-        ListOperations<String, Object> list = redisTemplate.opsForList();
-        return list.range(k, l, l1);
-    }
-
-    /**
-     * 集合添加
+     * 设置有序集合，增加分数
      *
      * @param key
      * @param value
-     */
-    public void add(String key, Object value) {
-        SetOperations<String, Object> set = redisTemplate.opsForSet();
-        set.add(key, value);
-    }
-
-    /**
-     * 集合获取
-     *
-     * @param key
+     * @param score
      * @return
      */
-    public Set<Object> setMembers(String key) {
-        SetOperations<String, Object> set = redisTemplate.opsForSet();
-        return set.members(key);
+    public static Double zsetIncrement(String key, String value, Double score) {
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        score = operations.incrementScore(key, value, score);
+        return score;
     }
 
     /**
-     * 有序集合添加
+     * 获取有序集合分数
      *
      * @param key
      * @param value
-     * @param scoure
+     * @return
      */
-    public void zAdd(String key, Object value, double scoure) {
-        ZSetOperations<String, Object> zset = redisTemplate.opsForZSet();
-        zset.add(key, value, scoure);
+    public static Double zsetGetScore(String key, String value) {
+
+        ZSetOperations operations = redisTemplate.opsForZSet();
+
+        Double score = operations.score(key, value);
+        return score;
+    }
+
+
+    /**
+     * 获取有序集合 前 num 位
+     *
+     * @param key   集合名
+     * @param isAsc 是否升序
+     * @param page  第几页 从1开始
+     * @param num   每页个数
+     * @return
+     */
+    public static Set<String> zsetRange(String key, boolean isAsc, int page, int num) {
+        Set<String> rangeSet;
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        if (isAsc) {
+            rangeSet = operations.rangeByScore(key, 0, Double.MAX_VALUE, (page - 1) * num, num);
+        } else {
+            rangeSet = operations.reverseRangeByScore(key, 0, Double.MAX_VALUE, (page - 1) * num, num);
+        }
+        return rangeSet;
+    }
+
+
+    /**
+     * 获取当前key在集合中的排行
+     *
+     * @param key
+     * @param value
+     * @param isAsc
+     * @return
+     */
+    public static Long zsetRank(String key, String value, boolean isAsc) {
+        Long rank;
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        if (isAsc) {
+            rank = operations.rank(key, value);
+        } else {
+            rank = operations.reverseRank(key, value);
+        }
+        return rank;
+    }
+
+
+    /**
+     * 删除集合内元素
+     *
+     * @param key
+     * @param value
+     * @return
+     */
+    public static Long zsetRemove(String key, String value) {
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        Long removeNum = operations.remove(key, value);
+        return removeNum;
     }
 
     /**
-     * 有序集合获取
+     * 获取集合内元素
      *
      * @param key
-     * @param scoure
-     * @param scoure1
      * @return
      */
-    public Set<Object> rangeByScore(String key, double scoure, double scoure1) {
-        ZSetOperations<String, Object> zset = redisTemplate.opsForZSet();
-        return zset.rangeByScore(key, scoure, scoure1);
+    public static Map<String, Double> zsetValues(String key) {
+        ZSetOperations operations = redisTemplate.opsForZSet();
+        Set<ZSetOperations.TypedTuple<String>> set = operations.reverseRangeWithScores(key, 0, operations.size(key));
+        Map<String, Double> map = new LinkedHashMap<>();
+        Iterator<ZSetOperations.TypedTuple<String>> iterator = set.iterator();
+        while (iterator.hasNext()) {
+            ZSetOperations.TypedTuple<String> valueInfo = iterator.next();
+            map.put(valueInfo.getValue(), valueInfo.getScore());
+        }
+        return map;
     }
 }

@@ -35,9 +35,6 @@ import java.util.stream.Collectors;
 public class TrainStationService {
     private static final Logger logger = LoggerFactory.getLogger(TrainStationService.class);
 
-    @Autowired
-    private RedisUtils redisUtils;
-
     public StationResult getAllCity(NoneRequest requestBody) {
         // 从本地获取
         // return new StationResult(new StationList(getAllStation()));
@@ -119,7 +116,7 @@ public class TrainStationService {
      */
     private List<Station> getAllStatioonFromRedis() {
         // 优先从redis中获取站点信息
-        String allStationStr = (String) redisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_STATION);
+        String allStationStr = (String) RedisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_STATION);
         List<Station> stations = null;
         if (StringUtils.isNotBlank(allStationStr)) {
             stations = JSONObject.parseArray(allStationStr, Station.class);
@@ -128,7 +125,7 @@ public class TrainStationService {
         if (CollectionUtils.isEmpty(stations)) {
             stations = TrainHelper.getTrainAllCityFromNet();
             // 设置到缓存
-            redisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_STATION, JSONObject.toJSONString(stations), 1L, TimeUnit.DAYS);
+            RedisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_STATION, JSONObject.toJSONString(stations), 1L, TimeUnit.DAYS);
         }
         return stations;
     }
@@ -140,7 +137,7 @@ public class TrainStationService {
      */
     private List<Station> getHotStatioonFromRedis() {
         // 优先从redis中获取站点信息
-        String HotStationStr = (String) redisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_HOT_STATION);
+        String HotStationStr = (String) RedisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_HOT_STATION);
         List<Station> hotStationsList = null;
         if (StringUtils.isNotBlank(HotStationStr)) {
             hotStationsList = JSONObject.parseArray(HotStationStr, Station.class);
@@ -149,7 +146,7 @@ public class TrainStationService {
         if (CollectionUtils.isEmpty(hotStationsList)) {
             hotStationsList = TrainHelper.getTrainHotStationFromNet();
             // 设置到缓存
-            redisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_HOT_STATION, JSONObject.toJSONString(hotStationsList), 1L, TimeUnit.DAYS);
+            RedisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_HOT_STATION, JSONObject.toJSONString(hotStationsList), 1L, TimeUnit.DAYS);
         }
         return hotStationsList;
     }
@@ -161,7 +158,7 @@ public class TrainStationService {
      */
     private Map<String, Object> getTrainCodeFromRedis() {
         // 优先从redis中获取站点信息
-        String trainNoLinkStr = (String) redisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_TRAIN_NO_LINK);
+        String trainNoLinkStr = (String) RedisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_TRAIN_NO_LINK);
         Map<String, Object> trainNoLinkMap = null;
         if (StringUtils.isNotBlank(trainNoLinkStr)) {
             trainNoLinkMap = JSONObject.parseObject(trainNoLinkStr, Map.class);
@@ -170,7 +167,7 @@ public class TrainStationService {
         if (CollectionUtils.isEmpty(trainNoLinkMap)) {
             trainNoLinkMap = TrainHelper.getAllTrainNoListFromNet();
             // 设置到缓存
-            redisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_TRAIN_NO_LINK, JSONObject.toJSONString(trainNoLinkMap), 1L, TimeUnit.DAYS);
+            RedisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_TRAIN_NO_LINK, JSONObject.toJSONString(trainNoLinkMap), 1L, TimeUnit.DAYS);
         }
         return trainNoLinkMap;
     }

@@ -41,9 +41,6 @@ public class TrainTicketService {
     @Autowired
     private TrainStationService trainStationService;
 
-    @Autowired
-    private RedisUtils redisUtils;
-
     private static final String DATE_FORMAT = "yyyy-MM-dd";
 
     private static String baseUrl = "https://kyfw.12306.cn";
@@ -103,7 +100,7 @@ public class TrainTicketService {
             logger.warn("查询火车票接口发生跳转：{}", ret12306);
             leftTicketUrl = ret12306.getString("c_url");
             // 火车票接口变动时，将变动接口信息存入redis缓存
-            redisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL, leftTicketUrl);
+            RedisUtils.set(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL, leftTicketUrl);
             ret12306 = TrainHelper.requestTo12306(getTicketListUrl(requestBody));
         }
 
@@ -440,7 +437,7 @@ public class TrainTicketService {
     private String getTicketListUrl(GetTicketListRequest requestBody) {
         String fromDate = new DateTime(requestBody.getFromDate()).toString(DATE_FORMAT);
         String passengerType = requestBody.getIsStudent() ? PassengerType.STUDENT.value() : PassengerType.ADULT.value();
-        return String.format(getTicketListUrlFmt, StrUtil.blankToDefault(Convert.toStr(redisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL)), leftTicketUrl),
+        return String.format(getTicketListUrlFmt, StrUtil.blankToDefault(Convert.toStr(RedisUtils.get(RedisKeyConstant.REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL)), leftTicketUrl),
                 fromDate, requestBody.getFromStationCode(), requestBody.getToStationCode(), passengerType);
     }
 

@@ -26,4 +26,9 @@ public class RedisKeyConstant {
      * @{value} 动态tikcetUrl
      */
     public static final String REDIS_KEY_LOCAL_DATA_LEFT_TICKET_URL = "LOCAL_DATA:LEFT_TICKET_URL";
+
+    /**
+     * @{value} 12306的cookie
+     */
+    public static final String REDIS_KEY_LOCAL_DATA_COOKIE_12306 = "LOCAL_DATA:COOKIE_12306";
 }
